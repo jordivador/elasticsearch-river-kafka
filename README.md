@@ -1,3 +1,14 @@
+Important Note about that fork
+=========
+This fork enables store custom ids in ElasticSearch through kafka-river plugin. In order to store those ids, is a must send messages to kafka with `message.type` as json and you need add _id .
+
+````json
+{
+  "_id": "<custom_id>",
+  "content": "your content here"
+}
+
+
 Kafka River Plugin for ElasticSearch
 =========
 
