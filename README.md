@@ -2,19 +2,19 @@ Important Note about that fork
 =========
 This fork enables store custom ids in ElasticSearch through kafka-river plugin. In order to store those ids, is a must send messages to kafka with `message.type` as json and you need add _id .
 
-````json
+```json
 {
   "_id": "<custom_id>",
   "content": "your content here"
 }
-
+```
 
 Kafka River Plugin for ElasticSearch
 =========
 
 The Kafka River plugin allows you to read messages from Kafka and index bulked messages into elasticsearch.
 The bulk size (the number of messages to be indexed in one request) and concurrent request number is configurable.
-The Kafka River also supports consuming messages from multiple Kafka brokers and multiple partitions. 
+The Kafka River also supports consuming messages from multiple Kafka brokers and multiple partitions.
 
 The plugin uses the latest Kafka and Elasticsearch version.
  * Kafka version 0.8.1.1
@@ -28,7 +28,7 @@ Setup
 
 1. Install Kafka if you are working on local environment (See [Apache Kafka Quick Start Guide](http://kafka.apache.org/07/quickstart.html)  for instructions on how to Download and Build.)
 
-2. Install the plugin 
+2. Install the plugin
 
 ```sh
 cd $ELASTICSEARCH_HOME
@@ -43,7 +43,7 @@ cd $ELASTICSEARCH_HOME
 If it doesn't work, clone git repository and build plugin manually.
 * Build the plugin - it will create a zip file here: $PROJECT-PATH/target/elasticsearch-river-kafka-1.2.1-SNAPSHOT-plugin.zip
 * Install the plugin from target into elasticsearch
- 
+
 ```sh
 cd $ELASTICSEARCH_HOME
 .bin/plugin --install <plugin-name> --url file:////$PLUGIN-PATH/elasticsearch-river-kafka-1.2.1-SNAPSHOT-plugin.zip
@@ -67,7 +67,7 @@ curl -XPUT 'localhost:9200/_river/<river-name>/_meta' -d '
 {
      "type" : "kafka",
      "kafka" : {
-        "zookeeper.connect" : <zookeeper.connect>, 
+        "zookeeper.connect" : <zookeeper.connect>,
         "zookeeper.connection.timeout.ms" : <zookeeper.connection.timeout.ms>,
         "topic" : <topic.name>,
         "message.type" : <message.type>
@@ -82,7 +82,7 @@ curl -XPUT 'localhost:9200/_river/<river-name>/_meta' -d '
  }'
  ```
  * ***NOTE***: Type "kafka" is required and must not be changed. It corresponds the type, given in the source code, by which elasticsearch is able to associate created river with the installed plugin.
- 
+
  *Example:*
 
  ```json
@@ -90,7 +90,7 @@ curl -XPUT 'localhost:9200/_river/<river-name>/_meta' -d '
  {
       "type" : "kafka",
       "kafka" : {
-         "zookeeper.connect" : "localhost", 
+         "zookeeper.connect" : "localhost",
          "zookeeper.connection.timeout.ms" : 10000,
          "topic" : "river",
          "message.type" : "json"
@@ -104,14 +104,14 @@ curl -XPUT 'localhost:9200/_river/<river-name>/_meta' -d '
       }
   }'
   ```
- 
+
 The detailed description of each parameter:
- 
+
 * `river-name` (required) - The river name to be created in elasticsearch.
 * `zookeeper.connect` (optional) - Zookeeper server host. Default is: `localhost`
 * `zookeeper.connection.timeout.ms` (optional) - Zookeeper server connection timeout in milliseconds. Default is: `10000`
 * `topic` (optional) - The name of the topic where you want to send Kafka message. Default is: `elasticsearch-river-kafka`
-* `message.type` (optional) - The kafka message type, which then will be inserted into ES keeping the same type. Default is: `json`. The following options are available: 
+* `message.type` (optional) - The kafka message type, which then will be inserted into ES keeping the same type. Default is: `json`. The following options are available:
    - `json` : Inserts json message into ES separating each json property into ES document property.
    *example:*
       ```json
@@ -120,7 +120,7 @@ The detailed description of each parameter:
           "age": 28
        }
       ```
-   
+
    - `string` : Inserts string message into ES as a documet, where the key name is `value`, and the value is the received message.
    *example:*
     ```json
@@ -128,7 +128,7 @@ The detailed description of each parameter:
           "value": "received text message"
      }
     ```
-   
+
 * `index` (optional) - The name of elasticsearch index. Default is: `kafka-index`
 * `type` (optional) - The mapping type of elasticsearch index. Default is: `status`
 * `bulk.size` (optional) - The number of messages to be bulk indexed into elasticsearch. Default is: `100`
@@ -138,19 +138,19 @@ The detailed description of each parameter:
    - `delete` : Deletes documents from ES based on `id` field set in the received message.
    - `raw.execute` : Execute incoming messages as a raw query.
 
-Flush interval is set to 12 hours by default, so any remaining messages get flushed to elasticsearch even if the number of messages has not reached. 
+Flush interval is set to 12 hours by default, so any remaining messages get flushed to elasticsearch even if the number of messages has not reached.
 
 
 To delete the existing river, execute:
- 
+
 ```json
 curl -XDELETE 'localhost:9200/_river/<river-name>/'
-``` 
+```
 
 *Example:*
 ```json
 curl -XDELETE 'localhost:9200/_river/kafka-river/'
-``` 
+```
 
 
 To see the indexed data:
