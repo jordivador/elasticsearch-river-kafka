@@ -38,7 +38,7 @@ import java.util.Set;
  */
 public abstract class ElasticSearchProducer {
 
-    private static final ESLogger logger = ESLoggerFactory.getLogger(ElasticSearchProducer.class.getName());
+    protected static final ESLogger logger = ESLoggerFactory.getLogger(ElasticSearchProducer.class.getName());
 
     protected final ObjectReader reader = new ObjectMapper().reader(new TypeReference<Map<String, Object>>() {});
 

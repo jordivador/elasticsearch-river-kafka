@@ -25,6 +25,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 
+
 /**
  * Producer to index documents. Creates index document requests, which are executed with Bulk API.
  *
@@ -54,6 +55,7 @@ public class IndexDocumentProducer extends ElasticSearchProducer {
 
                 String message = null;
                 IndexRequest request = null;
+                String id = null;
 
                 switch (riverConfig.getMessageType()) {
                     case STRING:
@@ -69,9 +71,15 @@ public class IndexDocumentProducer extends ElasticSearchProducer {
                         break;
                     case JSON:
                         final Map<String, Object> messageMap = reader.readValue(messageBytes);
+                        id = messageMap.get("_id").toString();
+
+                        // Check _id is passed in json if not we store id as _id
+                        if(id == null){
+                            id = messageMap.get("id").toString();
+                        }
                         request = Requests.indexRequest(riverConfig.getIndexName()).
                                 type(riverConfig.getTypeName()).
-                                id(UUID.randomUUID().toString()).
+                                id(id).
                                 source(messageMap);
                 }
 
