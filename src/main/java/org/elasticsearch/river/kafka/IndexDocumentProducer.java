@@ -71,12 +71,15 @@ public class IndexDocumentProducer extends ElasticSearchProducer {
                         break;
                     case JSON:
                         final Map<String, Object> messageMap = reader.readValue(messageBytes);
-                        id = messageMap.get("_id").toString();
 
-                        // Check _id is passed in json if not we store id as _id
-                        if(id == null){
+                        try {
                             id = messageMap.get("id").toString();
+                        } catch (Exception ex){
+
+                            // Warns, key id don't exists in map
+                            ex.printStackTrace();
                         }
+
                         request = Requests.indexRequest(riverConfig.getIndexName()).
                                 type(riverConfig.getTypeName()).
                                 id(id).
