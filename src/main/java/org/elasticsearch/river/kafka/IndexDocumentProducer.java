@@ -74,19 +74,23 @@ public class IndexDocumentProducer extends ElasticSearchProducer {
 
                         try {
                             id = messageMap.get("id").toString();
-                        } catch (Exception ex){
 
-                            // Warns, key id don't exists in map
-                            ex.printStackTrace();
-                        }
-
-                        request = Requests.indexRequest(riverConfig.getIndexName()).
+                            request = Requests.indexRequest(riverConfig.getIndexName()).
                                 type(riverConfig.getTypeName()).
                                 id(id).
                                 source(messageMap);
+                        } catch (Exception ex){
+
+                            // Warns, key id don't exists in map
+                            logger.warn("Document don't have any id , please review this document {}", messageMap);
+                            // ex.printStackTrace();
+                        }
+
                 }
 
-                bulkProcessor.add(request);
+                if(request != null){
+                    bulkProcessor.add(request);
+                }
             } catch (Exception ex) {
                 ex.printStackTrace();
             }
