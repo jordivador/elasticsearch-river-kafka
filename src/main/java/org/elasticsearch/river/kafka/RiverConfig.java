@@ -15,6 +15,7 @@
  */
 package org.elasticsearch.river.kafka;
 
+import org.elasticsearch.common.unit.TimeValue;
 import org.elasticsearch.common.xcontent.support.XContentMapValues;
 import org.elasticsearch.river.RiverName;
 import org.elasticsearch.river.RiverSettings;
@@ -40,6 +41,13 @@ public class RiverConfig {
     private static final String BULK_SIZE = "bulk.size";
     private static final String CONCURRENT_REQUESTS = "concurrent.requests";
     private static final String ACTION_TYPE = "action.type";
+    private static final String FLUSH_INTERVAL = "flush.interval";
+    
+    /* StatsD config */
+    private static final String STATSD_PREFIX = "prefix";
+    private static final String STATSD_HOST = "host";
+    private static final String STATSD_PORT = "port";
+    private static final String STATSD_INTERVAL_IN_SECONDS = "log.interval";
 
 
     private String zookeeperConnect;
@@ -51,6 +59,14 @@ public class RiverConfig {
     private int bulkSize;
     private int concurrentRequests;
     private ActionType actionType;
+    private TimeValue flushInterval;
+    
+    private String statsdPrefix;
+    private String statsdHost;
+    private int statsdPort;
+    private int statsdIntervalInSeconds;
+
+    private static final TimeValue FLUSH_12H = TimeValue.timeValueHours(12);
 
 
     public RiverConfig(RiverName riverName, RiverSettings riverSettings) {
@@ -80,12 +96,23 @@ public class RiverConfig {
             concurrentRequests = XContentMapValues.nodeIntegerValue(indexSettings.get(CONCURRENT_REQUESTS), 1);
             actionType = ActionType.fromValue(XContentMapValues.nodeStringValue(indexSettings.get(ACTION_TYPE),
                     ActionType.INDEX.toValue()));
+            flushInterval = TimeValue.parseTimeValue(XContentMapValues.nodeStringValue(indexSettings.get(FLUSH_INTERVAL), "12h"), FLUSH_12H);
         } else {
             indexName = riverName.name();
             typeName = "status";
             bulkSize = 100;
             concurrentRequests = 1;
             actionType = ActionType.INDEX;
+            flushInterval = FLUSH_12H;
+        }
+        
+        // Extract StatsD related configuration
+        if (riverSettings.settings().containsKey("statsd")) {
+            Map<String, Object> statsdSettings = (Map<String, Object>) riverSettings.settings().get("statsd");
+            statsdHost = XContentMapValues.nodeStringValue(statsdSettings.get(STATSD_HOST), "localhost");
+            statsdPrefix = XContentMapValues.nodeStringValue(statsdSettings.get(STATSD_PREFIX), "kafka_river");
+            statsdPort = XContentMapValues.nodeIntegerValue(statsdSettings.get(STATSD_PORT), 8125);
+            statsdIntervalInSeconds = XContentMapValues.nodeIntegerValue(statsdSettings.get(STATSD_INTERVAL_IN_SECONDS), 10);
         }
     }
 
@@ -177,5 +204,23 @@ public class RiverConfig {
 
     ActionType getActionType() {
         return actionType;
+    }
+
+    TimeValue getFlushInterval() { return flushInterval; }
+    
+    String getStatsdHost() {
+        return statsdHost;
+    }
+
+    String getStatsdPrefix() {
+        return statsdPrefix;
+    }
+
+    int getStatsdPort() {
+        return statsdPort;
+    }
+    
+    int getStatsdIntervalInSeconds() {
+        return statsdIntervalInSeconds;
     }
 }

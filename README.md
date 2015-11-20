@@ -17,8 +17,8 @@ The bulk size (the number of messages to be indexed in one request) and concurre
 The Kafka River also supports consuming messages from multiple Kafka brokers and multiple partitions.
 
 The plugin uses the latest Kafka and Elasticsearch version.
- * Kafka version 0.8.1.1
- * Elasticsearch version 1.4.0
+ * Kafka version 0.8.2.1
+ * Elasticsearch version 1.6.0
 
 The plugin is periodically updated, if there are newer versions of any dependencies.
 It is available in the [ElasticSearch's official website](http://www.elasticsearch.org/guide/en/elasticsearch/reference/current/modules-plugins.html).
@@ -26,7 +26,7 @@ It is available in the [ElasticSearch's official website](http://www.elasticsear
 Setup
 ==========
 
-1. Install Kafka if you are working on local environment (See [Apache Kafka Quick Start Guide](http://kafka.apache.org/07/quickstart.html)  for instructions on how to Download and Build.)
+1. Install Kafka if you are working on local environment (See [Apache Kafka Quick Start Guide](http://kafka.apache.org/documentation.html#quickstart)  for instructions on how to Download and Build.)
 
 2. Install the plugin
 
@@ -77,8 +77,15 @@ curl -XPUT 'localhost:9200/_river/<river-name>/_meta' -d '
         "type" : <mapping.type.name>,
         "bulk.size" : <bulk.size>,
         "concurrent.requests" : <concurrent.requests>,
-        "action.type" : <action.type>
-     }
+        "action.type" : <action.type>,
+        "flush.interval" : <flush.interval>
+    },
+    "statsd" : {
+        "host" : <statsd.host>,
+        "prefix" : <statsd.prefix>,
+        "port" : <statsd.port>,
+        "log.interval" : <statsd.log.interval>
+    }
  }'
  ```
  * ***NOTE***: Type "kafka" is required and must not be changed. It corresponds the type, given in the source code, by which elasticsearch is able to associate created river with the installed plugin.
@@ -100,7 +107,14 @@ curl -XPUT 'localhost:9200/_river/<river-name>/_meta' -d '
          "type" : "status",
          "bulk.size" : 100,
          "concurrent.requests" : 1,
-         "action.type" : "index"
+         "action.type" : "index",
+         "flush.interval" : "12h"
+      },
+      "statsd": {
+         "host" : "localhost",
+         "prefix" : "kafka.river",
+         "port" : 8125,
+         "log.interval" : 10
       }
   }'
   ```
@@ -137,9 +151,14 @@ The detailed description of each parameter:
    - `index` : Creates documents in ES with the `value` field set to the received message.
    - `delete` : Deletes documents from ES based on `id` field set in the received message.
    - `raw.execute` : Execute incoming messages as a raw query.
+* `flush.interval` (optional) - The number of seconds/minutes/hours after which any remaining messages get flushed to elasticsearch, even if the number of messages has not reached. The time values are represented like: "12h", "3m", "5s". Default is: `12h` (12 hours)
 
-Flush interval is set to 12 hours by default, so any remaining messages get flushed to elasticsearch even if the number of messages has not reached.
+#### Statsd configuration:
 
+* `host` (optional) - The statsd server host name. Default is: `localhost`
+* `port` (optional) - The statsd server port number. Default is: 8125
+* `prefix` (optional) - Prefix to be added to all statsd metric keys. Default is: `kafka.river`
+* `log.interval` (optional) - The interval, in seconds, in which to report metrics to the statsd server. Default is: `10` (10 seconds)
 
 To delete the existing river, execute:
 

@@ -40,23 +40,26 @@ public class KafkaWorker implements Runnable {
     private KafkaConsumer kafkaConsumer;
     private ElasticSearchProducer elasticsearchProducer;
     private RiverConfig riverConfig;
+    private Stats stats;
 
     private volatile boolean consume = false;
 
     private static final ESLogger logger = ESLoggerFactory.getLogger(KafkaWorker.class.getName());
 
     /**
-     * For randomly selecting the partition of a kafka partition.
+     * For randomly selecting the kafka partition.
      */
     private Random random = new Random();
 
 
     public KafkaWorker(final KafkaConsumer kafkaConsumer,
                        final ElasticSearchProducer elasticsearchProducer,
-                       final RiverConfig riverConfig) {
+                       final RiverConfig riverConfig,
+                       final Stats stats) {
         this.kafkaConsumer = kafkaConsumer;
         this.elasticsearchProducer = elasticsearchProducer;
         this.riverConfig = riverConfig;
+        this.stats = stats;
     }
 
     @Override
@@ -87,8 +90,6 @@ public class KafkaWorker implements Runnable {
      * Consumes the messages from the partition via specified stream.
      */
     private void consumeMessagesAndAddToBulkProcessor(final KafkaStream stream) {
-        Set<MessageAndMetadata> messageSet = Sets.newHashSet();
-        long counter = 0;
 
         try {
             // by default it waits forever for message, but there is timeout configured
@@ -100,22 +101,14 @@ public class KafkaWorker implements Runnable {
                 final MessageAndMetadata messageAndMetadata = consumerIterator.next();
                 logMessage(messageAndMetadata);
 
-                messageSet.add(messageAndMetadata);
-                counter++;
+                elasticsearchProducer.addMessagesToBulkProcessor(messageAndMetadata);
 
-                if(counter >= riverConfig.getBulkSize()) {
-                    elasticsearchProducer.addMessagesToBulkProcessor(messageSet);
-                    messageSet = Sets.newHashSet();
-                    counter = 0;
-                }
+                // StatsD reporting
+                stats.messagesReceived.incrementAndGet();
+                stats.lastCommitOffsetByPartitionId.put(messageAndMetadata.partition(), messageAndMetadata.offset());
             }
         } catch (ConsumerTimeoutException ex) {
             logger.debug("Nothing to be consumed for now. Consume flag is: {}", consume);
-        } finally {
-            
-            if(messageSet.size() > 0) {
-                elasticsearchProducer.addMessagesToBulkProcessor(messageSet);
-            }
         }
     }
 

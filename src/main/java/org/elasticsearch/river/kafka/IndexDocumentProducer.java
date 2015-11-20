@@ -33,67 +33,64 @@ import java.util.UUID;
  */
 public class IndexDocumentProducer extends ElasticSearchProducer {
 
-    public IndexDocumentProducer(Client client, RiverConfig riverConfig, KafkaConsumer kafkaConsumer) {
-        super(client, riverConfig, kafkaConsumer);
-    }
+	public IndexDocumentProducer(Client client, RiverConfig riverConfig, KafkaConsumer kafkaConsumer, Stats stats) {
+		super(client, riverConfig, kafkaConsumer, stats);
+	}
 
-    /**
-     * For the given messages creates index document requests and adds them to the bulk processor queue, for
-     * processing later when the size of bulk actions is reached.
-     *
-     * @param messageSet given set of messages
-     */
-    public void addMessagesToBulkProcessor(final Set<MessageAndMetadata> messageSet) {
+	/**
+	 * For the given messages creates index document requests and adds them to the bulk processor queue, for
+	 * processing later when the size of bulk actions is reached.
+	 *
+	 * @param messageAndMetadata given message
+	 */
+	public void addMessagesToBulkProcessor(final MessageAndMetadata messageAndMetadata) {
 
-        for (MessageAndMetadata messageAndMetadata : messageSet) {
-            final byte[] messageBytes = (byte[]) messageAndMetadata.message();
+		final byte[] messageBytes = (byte[]) messageAndMetadata.message();
 
-            if (messageBytes == null || messageBytes.length == 0) return;
+		if (messageBytes == null || messageBytes.length == 0) return;
 
-            try {
-                // TODO - future improvement - support for protobuf messages
+		try {
+			// TODO - future improvement - support for protobuf messages
 
-                String message = null;
-                IndexRequest request = null;
-                String id = null;
+			String message = null;
+			IndexRequest request = null;
+			String id = null;
 
-                switch (riverConfig.getMessageType()) {
-                    case STRING:
-                        message = XContentFactory.jsonBuilder()
-                                .startObject()
-                                .field("value", new String(messageBytes, "UTF-8"))
-                                .endObject()
-                                .string();
-                        request = Requests.indexRequest(riverConfig.getIndexName()).
-                                type(riverConfig.getTypeName()).
-                                id(UUID.randomUUID().toString()).
-                                source(message);
-                        break;
-                    case JSON:
-                        final Map<String, Object> messageMap = reader.readValue(messageBytes);
+			switch (riverConfig.getMessageType()) {
+				case STRING:
+					message = XContentFactory.jsonBuilder()
+						.startObject()
+						.field("value", new String(messageBytes, "UTF-8"))
+						.endObject()
+						.string();
+					request = Requests.indexRequest(riverConfig.getIndexName()).
+						type(riverConfig.getTypeName()).
+						id(UUID.randomUUID().toString()).
+						source(message);
+					break;
+				case JSON:
+					final Map<String, Object> messageMap = reader.readValue(messageBytes);
 
-                        try {
-                            id = messageMap.get("id").toString();
+					try {
+						id = messageMap.get("id").toString();
 
-                            request = Requests.indexRequest(riverConfig.getIndexName()).
-                                type(riverConfig.getTypeName()).
-                                id(id).
-                                source(messageMap);
-                        } catch (Exception ex){
+						request = Requests.indexRequest(riverConfig.getIndexName()).
+							type(riverConfig.getTypeName()).
+							id(id).
+							source(messageMap);
+					} catch (Exception ex){
 
-                            // Warns, key id don't exists in map
-                            logger.warn("Document don't have any id , please review this document {}", messageMap);
-                            // ex.printStackTrace();
-                        }
+						// Warns, key id don't exists in map
+						logger.warn("Document don't have any id , please review this document {}", messageMap);
+						// ex.printStackTrace();
+					}
 
-                }
+			}
 
-                if(request != null){
-                    bulkProcessor.add(request);
-                }
-            } catch (Exception ex) {
-                ex.printStackTrace();
-            }
-        }
-    }
+			bulkProcessor.add(request);
+		} catch (Exception ex) {
+			ex.printStackTrace();
+		}
+	}
+
 }
